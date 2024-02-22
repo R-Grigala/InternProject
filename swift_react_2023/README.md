@@ -1,3 +1,16 @@
+## Getting Started
+First, run the development server:
+
+```bash
+npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
+```
+
 დაწერეთ აპლიკაცია, რომელსაც ექნება შემდეგი შესაძლებლობები:
 
 1.ქვეყნის არჩევა: პირველივე გვერდზე მომხმარებელს უნდა დახვდეს ყველა შესაძლო ქვეყნის სია (countries API) 
@@ -28,3 +41,4 @@ Currency API - https://exchangerate.host/
 Airports API - https://api-ninjas.com/api/airports 
 
 შენიშვნა: გთხოვთ საჭიროებისამებრ დაარეგისტრიროთ თქვენი api-key/token.
+
