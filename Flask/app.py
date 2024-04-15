@@ -8,7 +8,7 @@ app = Flask(__name__)
 # Function to initialize the database
 def init_db():
     # Connect to the database
-    conn = sqlite3.connect('database.db')
+    conn = sqlite3.connect('database.sqlite3')
     cursor = conn.cursor()
     
     # Create todo_list table if not exists
@@ -45,7 +45,7 @@ def add_todo():
             return jsonify({"error": "Name and description are required."}), 400
 
         # Add the new todo to the database
-        conn = sqlite3.connect('database.db')
+        conn = sqlite3.connect('database.sqlite3')
         cursor = conn.cursor()
         cursor.execute('INSERT INTO todo_list (name, description, completed, date_created) VALUES (?, ?, ?, ?)',
                        (name, description, completed, date_created))
@@ -62,7 +62,7 @@ def add_todo():
 # Route to get all todo list items
 @app.route("/todolist", methods=["GET"])
 def get_todolist():
-    conn = sqlite3.connect('database.db')
+    conn = sqlite3.connect('database.sqlite3')
     cursor = conn.cursor()
     cursor.execute('SELECT * FROM todo_list')
     todo_list = cursor.fetchall()
@@ -72,7 +72,7 @@ def get_todolist():
 # Route to get a single todo item by its ID
 @app.route("/todolist/<int:todo_id>", methods=["GET"])
 def get_todo(todo_id):
-    conn = sqlite3.connect('database.db')
+    conn = sqlite3.connect('database.sqlite3')
     cursor = conn.cursor()
     cursor.execute('SELECT * FROM todo_list WHERE id = ?', (todo_id,))
     todo_item = cursor.fetchone()
@@ -93,7 +93,7 @@ def update_todo(todo_id):
         completed = data.get('completed')
 
         # Update the todo item in the database
-        conn = sqlite3.connect('database.db')
+        conn = sqlite3.connect('database.sqlite3')
         cursor = conn.cursor()
         cursor.execute('''
             UPDATE todo_list 
@@ -115,7 +115,7 @@ def update_todo(todo_id):
 def delete_todo(todo_id):
     try:
         # Delete the todo item from the database
-        conn = sqlite3.connect('database.db')
+        conn = sqlite3.connect('database.sqlite3')
         cursor = conn.cursor()
         cursor.execute('DELETE FROM todo_list WHERE id = ?', (todo_id,))
         conn.commit()
