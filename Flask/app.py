@@ -2,132 +2,137 @@ import sqlite3
 from flask import Flask, request, jsonify
 from datetime import datetime
 
-# Instantiate Flask app
+# გლობალური ცვლადები ბაზასთან დასაკავშირებლად
+DB_NAME = 'db.sqlite3'
+
+# Flask app შექმნა
 app = Flask(__name__)
 
-# Function to initialize the database
+# ბაზის შექმნა
 def init_db():
-    # Connect to the database
-    conn = sqlite3.connect('database.sqlite3')
+    # ბაზასთან დაკავშირება
+    conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
     
-    # Create todo_list table if not exists
+    # შექმნის inventari ცხრილს თუ არ არის შექმნილი
     cursor.execute('''
-        CREATE TABLE IF NOT EXISTS todo_list (
+        CREATE TABLE IF NOT EXISTS inventari (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
-            description TEXT NOT NULL,
-            completed INTEGER DEFAULT 0,
-            date_created TEXT DEFAULT CURRENT_TIMESTAMP
+            barcode TEXT,
+            amount INTEGER DEFAULT 1,
+            buy_date TEXT DEFAULT CURRENT_DATE
         )
     ''')
     
-    # Commit changes and close connection
+    # შეინახავს ცვლილებებს და დახურავს ბაზას
     conn.commit()
     conn.close()
 
-# Initialize the database
+# ფუნქციის გამოძახება: ბაზის შექმნა
 init_db()
 
-# Route to add a new todo list item
-@app.route("/todolist", methods=["POST"])
-def add_todo():
+# ახალი ნივთის დამატება
+@app.route("/api", methods=["POST"])
+def add_item():
     try:
         # Extract data from JSON request
         data = request.json
         name = data.get('name')
-        description = data.get('description')
-        completed = data.get('completed', 0)  # Default value of completed is 0
-        date_created = datetime.utcnow().isoformat()  # Current timestamp
+        barcode = data.get('barcode')
+        amount = data.get('amount', 1)  # ნივთის რაოდენობა ჩაიწერება 1 თუ ცალრიელს დავტოვებთ
+        buy_date = data.get('buy_date', datetime.utcnow().date().isoformat())  # ყიდვის თარიღად ჩაიწერება ნივთის დამატების დრო
 
-        # Validate input
-        if not name or not description:
-            return jsonify({"error": "Name and description are required."}), 400
+        # შემოწმება ნივთის სახელი რომ არ დარჩეს ცარიელი
+        if not name:
+            return jsonify({"error": "Inventari Name is empty, please enter item Name."}), 400
 
-        # Add the new todo to the database
-        conn = sqlite3.connect('database.sqlite3')
+        # დაემატება ახალი ნივთი ბაზაში
+        conn = sqlite3.connect(DB_NAME)
         cursor = conn.cursor()
-        cursor.execute('INSERT INTO todo_list (name, description, completed, date_created) VALUES (?, ?, ?, ?)',
-                       (name, description, completed, date_created))
+        cursor.execute('INSERT INTO inventari (name, barcode, amount, buy_date) VALUES (?, ?, ?, ?)',
+                       (name, barcode, amount, buy_date))
         conn.commit()
         conn.close()
 
         # Return success response
-        return jsonify({"message": "Todo added successfully."}), 201
+        return jsonify({"message": "Inventari added successfully."}), 201
     
-    except Exception as e:
+    except Exception:
         # Return error response for invalid request
         return jsonify({"error": "Invalid request."}), 400
 
-# Route to get all todo list items
-@app.route("/todolist", methods=["GET"])
-def get_todolist():
-    conn = sqlite3.connect('database.sqlite3')
+# დააბრუნებს ყველა ნივთის აღწერას ბაზიდან
+@app.route("/api", methods=["GET"])
+def get_items():
+    conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
-    cursor.execute('SELECT * FROM todo_list')
-    todo_list = cursor.fetchall()
+    cursor.execute('SELECT * FROM inventari')
+    item_list = cursor.fetchall()
     conn.close()
-    return jsonify(todo_list)
+    return jsonify(item_list)
 
-# Route to get a single todo item by its ID
-@app.route("/todolist/<int:todo_id>", methods=["GET"])
-def get_todo(todo_id):
-    conn = sqlite3.connect('database.sqlite3')
+# ბაზიდან აბრუნებს ერთ ნივთს კონკრეტული id-ის მიხედვით
+@app.route("/api/<int:inv_id>", methods=["GET"])
+def get_item(inv_id):
+    conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
-    cursor.execute('SELECT * FROM todo_list WHERE id = ?', (todo_id,))
-    todo_item = cursor.fetchone()
+    cursor.execute('SELECT * FROM inventari WHERE id = ?', (inv_id,))
+    one_item = cursor.fetchone()
     conn.close()
-    if todo_item:
-        return jsonify(todo_item)
+
+    if one_item:
+        return jsonify(one_item)
     else:
-        return jsonify({"error": "Todo item not found."}), 404
+        return jsonify({"error": "Inventari item not found."}), 404
 
-# Route to update a todo item by its ID
-@app.route("/todolist/<int:todo_id>", methods=["PUT"])
-def update_todo(todo_id):
+# ბაზაში არსებული ნივთის აღწერის განახლება კონკრეტული id-ით
+@app.route("/api/<int:inv_id>", methods=["PUT"])
+def update_item(inv_id):
     try:
         # Extract data from JSON request
         data = request.json
         name = data.get('name')
-        description = data.get('description')
-        completed = data.get('completed')
+        barcode = data.get('barcode')
+        amount = data.get('amount')
+        buy_date = data.get('buy_date')
 
-        # Update the todo item in the database
-        conn = sqlite3.connect('database.sqlite3')
+        # ბაზაში ნივთის აღწერის განახლება
+        conn = sqlite3.connect(DB_NAME)
         cursor = conn.cursor()
         cursor.execute('''
-            UPDATE todo_list 
-            SET name = ?, description = ?, completed = ?
+            UPDATE inventari 
+            SET name = ?, barcode = ?, amount = ?, buy_date = ?
             WHERE id = ?
-            ''', (name, description, completed, todo_id))
+            ''', (name, barcode, amount, buy_date, inv_id))
         conn.commit()
         conn.close()
 
         # Return success response
-        return jsonify({"message": "Todo item updated successfully."})
+        return jsonify({"message": "Inventari item updated successfully."})
     
-    except Exception as e:
+    except Exception:
         # Return error response for invalid request
         return jsonify({"error": "Invalid request."}), 400
 
-# Route to delete a todo item by its ID
-@app.route("/todolist/<int:todo_id>", methods=["DELETE"])
-def delete_todo(todo_id):
+# ბაზიდან ნივთის წაშლა კონკრეტული id-ის მიხედვით
+@app.route("/api/<int:inv_id>", methods=["DELETE"])
+def delete_item(inv_id):
     try:
-        # Delete the todo item from the database
-        conn = sqlite3.connect('database.sqlite3')
+        # ბაზიდაბ კონკრეტული ნივთის წაშლა
+        conn = sqlite3.connect(DB_NAME)
         cursor = conn.cursor()
-        cursor.execute('DELETE FROM todo_list WHERE id = ?', (todo_id,))
+        cursor.execute('DELETE FROM inventari WHERE id = ?', (inv_id,))
         conn.commit()
         conn.close()
 
         # Return success response
-        return jsonify({"message": "Todo item deleted successfully."})
+        return jsonify({"message": "Inventari item deleted successfully."})
     
-    except Exception as e:
+    except Exception:
         # Return error response for invalid request
         return jsonify({"error": "Invalid request."}), 400
 
 if __name__ == "__main__":
-    # Run the Flask app in debug mode
-    app.run(debug=True)
+    # Flask app სერვერის გაშვება ლოკალურად
+    app.run(debug=True, host='127.0.0.1', port=5000)
