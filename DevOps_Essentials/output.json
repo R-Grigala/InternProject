@@ -1,0 +1,16 @@
+{
+  "testName": "",
+  "tests": [
+    {
+      "name": "",
+      "status": false,
+      "duration": ""
+    }
+  ],
+  "summary": {
+    "success": 0,
+    "failed": 1,
+    "rating": 0,
+    "duration": "ms"
+  }
+}
